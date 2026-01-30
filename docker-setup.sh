@@ -106,8 +106,19 @@ fi
 OPENCLAW_CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$HOME/.openclaw}"
 OPENCLAW_WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$HOME/.openclaw/workspace}"
 
+# Distroless nonroot user has uid:gid 65532:65532
+CONTAINER_UID=65532
+CONTAINER_GID=65532
+
 mkdir -p "$OPENCLAW_CONFIG_DIR"
 mkdir -p "$OPENCLAW_WORKSPACE_DIR"
+
+# Fix ownership for distroless nonroot user (when containers will run)
+if [[ "$BUILD_ONLY" == false ]]; then
+  echo "==> Setting directory permissions for container user (uid:$CONTAINER_UID)..."
+  sudo chown -R "$CONTAINER_UID:$CONTAINER_GID" "$OPENCLAW_CONFIG_DIR"
+  sudo chown -R "$CONTAINER_UID:$CONTAINER_GID" "$OPENCLAW_WORKSPACE_DIR"
+fi
 
 export OPENCLAW_CONFIG_DIR
 export OPENCLAW_WORKSPACE_DIR
