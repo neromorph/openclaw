@@ -1,6 +1,5 @@
-FROM node:22-bookworm
+FROM node:24-trixie AS builder
 
-# Install Bun (required for build scripts)
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
 
@@ -25,16 +24,24 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 RUN OPENCLAW_A2UI_SKIP_MISSING=1 pnpm build
-# Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
+
 ENV OPENCLAW_PREFER_PNPM=1
-RUN pnpm ui:install
-RUN pnpm ui:build
+RUN pnpm ui:install && pnpm ui:build
+
+RUN CI=true pnpm prune --prod
+
+FROM gcr.io/distroless/nodejs24-debian13:nonroot AS runtime
+
+WORKDIR /app
+
+COPY --from=builder --chown=65532:65532 /app/dist ./dist
+COPY --from=builder --chown=65532:65532 /app/node_modules ./node_modules
+COPY --from=builder --chown=65532:65532 /app/package.json ./package.json
+COPY --from=builder --chown=65532:65532 /app/extensions ./extensions
 
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--disable-proto=throw"
 
-# Security hardening: Run as non-root user
-# The node:22-bookworm image includes a 'node' user (uid 1000)
-# This reduces the attack surface by preventing container escape via root privileges
-USER node
+EXPOSE 18789
 
-CMD ["node", "dist/index.js"]
+CMD ["dist/index.js"]
