@@ -38,6 +38,7 @@ COPY --from=builder --chown=65532:65532 /app/dist ./dist
 COPY --from=builder --chown=65532:65532 /app/node_modules ./node_modules
 COPY --from=builder --chown=65532:65532 /app/package.json ./package.json
 COPY --from=builder --chown=65532:65532 /app/extensions ./extensions
+COPY --from=builder --chown=65532:65532 /app/docs/reference/templates ./docs/reference/templates
 
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--disable-proto=throw"
